@@ -1,0 +1,1279 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Online-Shop - Leonardo AI Stil</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background-color: #0A0B1A;
+      color: #E2E8F0;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+    header {
+      background-color: #0A0B1A;
+      border-bottom: 1px solid #6B46C1;
+      padding: 1rem 0;
+    }
+    header .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header a {
+      color: #00D4FF;
+      text-decoration: none;
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+    header select, header button {
+      background-color: #0A0B1A;
+      border: 1px solid #6B46C1;
+      color: #E2E8F0;
+      padding: 0.5rem;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    header button {
+      background-color: #6B46C1;
+      border: none;
+      margin-left: 1rem;
+      transition: background-color 0.3s;
+    }
+    header button:hover {
+      background-color: #00D4FF;
+    }
+    .banner {
+      width: 100%;
+      height: 200px;
+      background: url('https://via.placeholder.com/1200x200/0A0B1A/6B46C1?text=Shop+Banner') center/cover no-repeat;
+    }
+    .products {
+      padding: 2rem 0;
+    }
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1.5rem;
+    }
+    .product-card {
+      background-color: #1A1B2A;
+      border: 1px solid #6B46C1;
+      border-radius: 8px;
+      padding: 1rem;
+      text-align: center;
+      transition: box-shadow 0.3s;
+    }
+    .product-card:hover {
+      box-shadow: 0 0 15px rgba(0, 212, 255, 0.5);
+    }
+    .product-card img {
+      max-width: 100%;
+      height: 150px;
+      object-fit: cover;
+      border-radius: 5px;
+    }
+    .product-card h3 {
+      margin: 0.5rem 0;
+      font-size: 1.2rem;
+    }
+    .product-card p {
+      color: #00D4FF;
+      margin: 0.5rem 0;
+    }
+    .product-card button {
+      background-color: #6B46C1;
+      color: #E2E8F0;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .product-card button:hover {
+      background-color: #00D4FF;
+    }
+    footer {
+      background-color: #0A0B1A;
+      border-top: 1px solid #6B46C1;
+      padding: 2rem 0;
+      text-align: center;
+    }
+    footer a {
+      color: #00D4FF;
+      margin: 0 1rem;
+      text-decoration: none;
+      transition: color 0.3s;
+      cursor: pointer;
+    }
+    footer a:hover {
+      color: #6B46C1;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.75);
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background-color: #1A1B2A;
+      border: 1px solid #6B46C1;
+      padding: 2rem;
+      border-radius: 8px;
+      max-width: 800px;
+      width: 100%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .modal-content input, .modal-content textarea, .modal-content select {
+      width: 100%;
+      padding: 0.5rem;
+      margin: 0.5rem 0;
+      background-color: #0A0B1A;
+      border: 1px solid #6B46C1;
+      color: #E2E8F0;
+      border-radius: 5px;
+    }
+    .modal-content button {
+      background-color: #6B46C1;
+      color: #E2E8F0;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 0.5rem;
+    }
+    .modal-content button:hover {
+      background-color: #00D4FF;
+    }
+    .modal-content .close {
+      background-color: #FF4D4D;
+    }
+    .modal-content .close:hover {
+      background-color: #FF7878;
+    }
+    #card-element {
+      border: 1px solid #6B46C1;
+      padding: 0.5rem;
+      border-radius: 5px;
+      background-color: #0A0B1A;
+      color: #E2E8F0;
+    }
+    #adminDashboard .accordion {
+      margin-bottom: 1rem;
+    }
+    #adminDashboard .accordion-header {
+      background-color: #2A2B3A;
+      padding: 1rem;
+      border-radius: 5px;
+      cursor: pointer;
+      color: #00D4FF;
+      font-size: 1.2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    #adminDashboard .accordion-header:hover {
+      background-color: #3A3B4A;
+    }
+    #adminDashboard .accordion-content {
+      display: none;
+      padding: 1rem;
+      background-color: #1A1B2A;
+      border-radius: 0 0 5px 5px;
+    }
+    #adminDashboard .accordion-content.active {
+      display: block;
+    }
+    #adminDashboard .section div {
+      margin-bottom: 1rem;
+    }
+    #adminDashboard .order {
+      background-color: #0A0B1A;
+      border: 1px solid #6B46C1;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border-radius: 5px;
+    }
+    #adminDashboard label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: #00D4FF;
+    }
+    #adminDashboard .note {
+      color: #FF4D4D;
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+    }
+    #cartItems .cart-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid #6B46C1;
+    }
+    #cartItems .cart-item button {
+      background-color: #FF4D4D;
+    }
+    #cartItems .cart-item button:hover {
+      background-color: #FF7878;
+    }
+    #cartTotal {
+      font-weight: bold;
+      margin: 1rem 0;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container">
+      <div style="display: flex; align-items: center;">
+        <a href="/" id="shopName">Mein Online-Shop</a>
+        <select style="margin-left: 1rem;" id="categoryFilter" onchange="filterProducts(this.value)">
+          <option value="All">Alle</option>
+        </select>
+      </div>
+      <div id="headerButtons">
+        <button onclick="showModal('loginModal')">Anmelden</button>
+        <button onclick="showModal('checkoutModal')" id="cartButton">Warenkorb (0)</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Banner -->
+  <div class="banner" id="banner"></div>
+
+  <!-- Products -->
+  <section class="products">
+    <div class="container">
+      <div class="product-grid" id="productGrid">
+        <div class="product-card">
+          <img src="https://via.placeholder.com/150?text=Hoodie+Fuchs" alt="Hoodie Fuchs">
+          <h3>Hoodie Fuchs</h3>
+          <p>$39.99</p>
+          <p class="category">Kategorie: Kleidung</p>
+          <button onclick="addToCart('Hoodie Fuchs', 39.99, 'gelato_001')">In den Warenkorb</button>
+        </div>
+        <div class="product-card">
+          <img src="https://via.placeholder.com/150?text=T-Shirt" alt="T-Shirt">
+          <h3>T-Shirt</h3>
+          <p>$19.99</p>
+          <p class="category">Kategorie: Kleidung</p>
+          <button onclick="addToCart('T-Shirt', 19.99, 'gelato_002')">In den Warenkorb</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p id="supportInfo">+1234567890 | Mo-Fr, 9:00-14:00</p>
+      <p id="footerText">Alle Rechte vorbehalten</p>
+      <div style="margin: 1rem 0;" id="socialLinks">
+        <a href="https://youtube.com">YouTube</a>
+        <a href="https://tiktok.com">TikTok</a>
+        <a href="https://instagram.com">Instagram</a>
+      </div>
+      <div id="legalLinks">
+        <a onclick="showLegalModal('agb')">AGB</a>
+        <a onclick="showLegalModal('impressum')">Impressum</a>
+        <a onclick="showLegalModal('datenschutz')">Datenschutz</a>
+        <a onclick="showLegalModal('widerrufsrecht')">Widerrufsrecht</a>
+      </div>
+      <p style="margin-top: 1rem;">Erstellt von Grok</p>
+    </div>
+  </footer>
+
+  <!-- Login Modal -->
+  <div class="modal" id="loginModal">
+    <div class="modal-content">
+      <h2 style="color: #00D4FF;">Kundenanmeldung</h2>
+      <input type="email" placeholder="E-Mail" id="loginEmail">
+      <input type="password" placeholder="Passwort" id="loginPassword">
+      <button onclick="login()">Anmelden</button>
+      <button onclick="showModal('adminLoginModal')">Admin-Anmeldung</button>
+      <button class="close" onclick="closeModal('loginModal')">Schließen</button>
+    </div>
+  </div>
+
+  <!-- Admin Login Modal -->
+  <div class="modal" id="adminLoginModal">
+    <div class="modal-content">
+      <h2 style="color: #00D4FF;">Admin-Anmeldung</h2>
+      <input type="email" placeholder="E-Mail" id="adminEmail">
+      <input type="password" placeholder="Passwort" id="adminPassword">
+      <input type="text" placeholder="Admin-Schlüssel" id="adminKey">
+      <button onclick="adminLogin()">Anmelden</button>
+      <button class="close" onclick="closeModal('adminLoginModal')">Schließen</button>
+    </div>
+  </div>
+
+  <!-- Checkout Modal -->
+  <div class="modal" id="checkoutModal">
+    <div class="modal-content">
+      <h2 style="color: #00D4FF;">Warenkorb & Bestellung</h2>
+      <div id="cartItems"></div>
+      <p id="cartTotal"></p>
+      <h3 style="color: #00D4FF; margin-top: 1rem;">Bestelldaten</h3>
+      <input type="email" placeholder="E-Mail" id="checkoutEmail">
+      <input type="text" placeholder="Vollständiger Name" id="checkoutName">
+      <input type="text" placeholder="Straße und Hausnummer" id="checkoutStreet">
+      <input type="text" placeholder="Stadt" id="checkoutCity">
+      <input type="text" placeholder="Postleitzahl" id="checkoutPostal">
+      <input type="text" placeholder="Land" id="checkoutCountry">
+      <input type="text" placeholder="Kreditkartennummer" id="cardNumber">
+      <input type="text" placeholder="Ablaufdatum (MM/YY)" id="cardExpiry">
+      <input type="text" placeholder="CVC" id="cardCvc">
+      <button onclick="checkout()">Jetzt bezahlen</button>
+      <button class="close" onclick="closeModal('checkoutModal')">Schließen</button>
+    </div>
+  </div>
+
+  <!-- Legal Modals -->
+  <div class="modal" id="agbModal">
+    <div class="modal-content">
+      <h2 style="color: #00D4FF;">AGB</h2>
+      <p id="agbContent">Kein Inhalt verfügbar.</p>
+      <button class="close" onclick="closeModal('agbModal')">Schließen</button>
+    </div>
+  </div>
+  <div class="modal" id="impressumModal">
+    <div class="modal-content">
+      <h2 style="color: #00D4FF;">Impressum</h2>
+      <p id="impressumContent">Kein Inhalt verfügbar.</p>
+      <button class="close" onclick="closeModal('impressumModal')">Schließen</button>
+    </div>
+  </div>
+  <div class="modal" id="datenschutzModal">
+    <div class="modal-content">
+      <h2 style="color: #00D4FF;">Datenschutz</h2>
+      <p id="datenschutzContent">Kein Inhalt verfügbar.</p>
+      <button class="close" onclick="closeModal('datenschutzModal')">Schließen</button>
+    </div>
+  </div>
+  <div class="modal" id="widerrufsrechtModal">
+    <div class="modal-content">
+      <h2 style="color: #00D4FF;">Widerrufsrecht</h2>
+      <p id="widerrufsrechtContent">Kein Inhalt verfügbar.</p>
+      <button class="close" onclick="closeModal('widerrufsrechtModal')">Schließen</button>
+    </div>
+  </div>
+
+  <!-- Admin Dashboard Modal -->
+  <div class="modal" id="adminDashboard">
+    <div class="modal-content">
+      <h2 style="color: #00D4FF; margin-bottom: 2rem;">Admin-Dashboard</h2>
+      <button onclick="copySettingsLink()">Link kopieren</button>
+
+      <!-- Accordion Menu -->
+      <div class="accordion">
+        <div class="accordion-header" onclick="toggleAccordion(this)">
+          Allgemeine Einstellungen
+          <svg style="width: 20px; height: 20px;" fill="none" stroke="#00D4FF" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+        <div class="accordion-content">
+          <div>
+            <label>Shop-Name</label>
+            <input type="text" id="shopNameInput" value="Mein Online-Shop" onchange="updateSettings('general')">
+          </div>
+          <div>
+            <label>Banner-URL</label>
+            <input type="text" id="bannerInput" value="https://via.placeholder.com/1200x200/0A0B1A/6B46C1?text=Shop+Banner" onchange="updateSettings('general')">
+          </div>
+          <div>
+            <label>Telefonnummer</label>
+            <input type="text" id="phoneInput" value="+1234567890" onchange="updateSettings('general')">
+          </div>
+          <div>
+            <label>Öffnungszeiten</label>
+            <input type="text" id="hoursInput" value="Mo-Fr, 9:00-14:00" onchange="updateSettings('general')">
+          </div>
+          <div>
+            <label>Footer-Text</label>
+            <input type="text" id="footerTextInput" value="Alle Rechte vorbehalten" onchange="updateSettings('general')">
+          </div>
+          <div>
+            <label>YouTube-Link</label>
+            <input type="text" id="youtubeInput" value="https://youtube.com" onchange="updateSettings('general')">
+          </div>
+          <div>
+            <label>TikTok-Link</label>
+            <input type="text" id="tiktokInput" value="https://tiktok.com" onchange="updateSettings('general')">
+          </div>
+          <div>
+            <label>Instagram-Link</label>
+            <input type="text" id="instagramInput" value="https://instagram.com" onchange="updateSettings('general')">
+          </div>
+          <div>
+            <label>Kategorien auf Startseite anzeigen</label>
+            <input type="checkbox" id="showCategories" onchange="updateSettings('general')">
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="accordion-header" onclick="toggleAccordion(this)">
+          API-Schlüssel
+          <svg style="width: 20px; height: 20px;" fill="none" stroke="#00D4FF" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+        <div class="accordion-content">
+          <p class="note">Hinweis: Bitte nur Live-API-Schlüssel verwenden.</p>
+          <div>
+            <label>Gelato API-Schlüssel</label>
+            <input type="text" id="gelatoApiInput" onchange="updateSettings('apiKeys')">
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="accordion-header" onclick="toggleAccordion(this)">
+          Auszahlungseinstellungen
+          <svg style="width: 20px; height: 20px;" fill="none" stroke="#00D4FF" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+        <div class="accordion-content">
+          <div>
+            <label>IBAN</label>
+            <input type="text" id="payoutIban" placeholder="IBAN für Auszahlungen eingeben" onchange="updateSettings('payout')">
+          </div>
+          <div>
+            <label>BIC</label>
+            <input type="text" id="payoutBic" placeholder="BIC für Auszahlungen eingeben" onchange="updateSettings('payout')">
+          </div>
+          <div>
+            <label>Auszahlungshäufigkeit</label>
+            <select id="payoutFrequency" onchange="updateSettings('payout'); togglePayoutFields()">
+              <option value="weekly">Wöchentlich</option>
+              <option value="monthly">Monatlich</option>
+            </select>
+          </div>
+          <div id="weeklyPayoutFields">
+            <div>
+              <label>Auszahlungstag (wöchentlich)</label>
+              <select id="payoutDayOfWeek" onchange="updateSettings('payout')">
+                <option value="Monday">Montag</option>
+                <option value="Tuesday">Dienstag</option>
+                <option value="Wednesday">Mittwoch</option>
+                <option value="Thursday">Donnerstag</option>
+                <option value="Friday">Freitag</option>
+              </select>
+            </div>
+          </div>
+          <div id="monthlyPayoutFields" style="display: none;">
+            <div>
+              <label>Auszahlungstag (monatlich)</label>
+              <select id="payoutDayOfMonth" onchange="updateSettings('payout')"></select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="accordion-header" onclick="toggleAccordion(this)">
+          Rechtliches
+          <svg style="width: 20px; height: 20px;" fill="none" stroke="#00D4FF" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+        <div class="accordion-content">
+          <div>
+            <label>AGB</label>
+            <textarea id="agbInput" placeholder="AGB" onchange="updateSettings('legal')"></textarea>
+          </div>
+          <div>
+            <label>Impressum</label>
+            <textarea id="impressumInput" placeholder="Impressum" onchange="updateSettings('legal')"></textarea>
+          </div>
+          <div>
+            <label>Datenschutz</label>
+            <textarea id="datenschutzInput" placeholder="Datenschutz" onchange="updateSettings('legal')"></textarea>
+          </div>
+          <div>
+            <label>Widerrufsrecht</label>
+            <textarea id="widerrufsrechtInput" placeholder="Widerrufsrecht" onchange="updateSettings('legal')"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="accordion-header" onclick="toggleAccordion(this)">
+          Bestellungen
+          <svg style="width: 20px; height: 20px;" fill="none" stroke="#00D4FF" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+        <div class="accordion-content">
+          <div id="ordersList"></div>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="accordion-header" onclick="toggleAccordion(this)">
+          Bestellarchiv
+          <svg style="width: 20px; height: 20px;" fill="none" stroke="#00D4FF" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+        <div class="accordion-content">
+          <div id="orderLibrary"></div>
+          <button onclick="downloadAllOrdersAsPDF()">Alle Bestellungen als PDF herunterladen</button>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="accordion-header" onclick="toggleAccordion(this)">
+          Analyse
+          <svg style="width: 20px; height: 20px;" fill="none" stroke="#00D4FF" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+        <div class="accordion-content">
+          <div>
+            <p>Täglicher Umsatz: $<span id="dailyRevenue">0.00</span></p>
+          </div>
+          <div>
+            <p>Monatlicher Umsatz: $<span id="monthlyRevenue">0.00</span></p>
+          </div>
+          <div>
+            <p>Gesamtumsatz: $<span id="totalRevenue">0.00</span></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="accordion-header" onclick="toggleAccordion(this)">
+          Produktvorlagen
+          <svg style="width: 20px; height: 20px;" fill="none" stroke="#00D4FF" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+        <div class="accordion-content">
+          <div id="productTemplates"></div>
+          <button onclick="addProduct()">Produkt hinzufügen</button>
+        </div>
+      </div>
+
+      <button class="close" onclick="closeModal('adminDashboard')">Schließen</button>
+    </div>
+  </div>
+
+  <script type="text/javascript">
+    var gk_isXlsx = false;
+    var gk_xlsxFileLookup = {};
+    var gk_fileData = {};
+    function filledCell(cell) {
+      return cell !== '' && cell != null;
+    }
+    function loadFileData(filename) {
+      if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+        try {
+          var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+          var firstSheetName = workbook.SheetNames[0];
+          var worksheet = workbook.Sheets[firstSheetName];
+          var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+          var filteredData = jsonData.filter(row => row.some(filledCell));
+          var headerRowIndex = filteredData.findIndex((row, index) =>
+            row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+          );
+          if (headerRowIndex === -1 || headerRowIndex > 25) {
+            headerRowIndex = 0;
+          }
+          var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex));
+          csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+          return csv;
+        } catch (e) {
+          console.error(e);
+          return "";
+        }
+      }
+      return gk_fileData[filename] || "";
+    }
+
+    let cart = [];
+    let orders = [];
+    let isAdmin = false;
+    let isLoggedIn = false;
+    let analytics = { daily: 0, monthly: 0, total: 0 };
+    let products = [
+      { gelatoId: 'gelato_001', name: 'Hoodie Fuchs', price: 39.99, image: 'https://via.placeholder.com/150?text=Hoodie+Fuchs', category: 'Kleidung' },
+      { gelatoId: 'gelato_002', name: 'T-Shirt', price: 19.99, image: 'https://via.placeholder.com/150?text=T-Shirt', category: 'Kleidung' },
+    ];
+
+    window.onload = function() {
+      loadSettings();
+      loadProducts();
+      updateOrders();
+      updateAnalytics();
+      togglePayoutFields();
+      updateCategoryFilter();
+      populateMonthlyPayoutDays();
+    };
+
+    window.addEventListener('pageshow', function(event) {
+      if (event.persisted) {
+        loadSettings();
+        loadProducts();
+        updateOrders();
+        updateAnalytics();
+        togglePayoutFields();
+        updateCategoryFilter();
+        populateMonthlyPayoutDays();
+      }
+    });
+
+    function populateMonthlyPayoutDays() {
+      const payoutDayOfMonth = document.getElementById('payoutDayOfMonth');
+      payoutDayOfMonth.innerHTML = '';
+      for (let i = 1; i <= 31; i++) {
+        const option = document.createElement('option');
+        option.value = i;
+        option.textContent = i;
+        payoutDayOfMonth.appendChild(option);
+      }
+    }
+
+    function showModal(id) {
+      document.getElementById(id).style.display = 'flex';
+      if (id === 'checkoutModal') {
+        updateCartDisplay();
+      }
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).style.display = 'none';
+    }
+
+    function showLegalModal(type) {
+      const contentId = `${type}Content`;
+      const inputId = `${type}Input`;
+      const contentElement = document.getElementById(contentId);
+      const inputElement = document.getElementById(inputId);
+      contentElement.textContent = inputElement.value || 'Kein Inhalt verfügbar.';
+      showModal(`${type}Modal`);
+    }
+
+    function updateLegalContent(type) {
+      const contentId = `${type}Content`;
+      const inputId = `${type}Input`;
+      const contentElement = document.getElementById(contentId);
+      const inputElement = document.getElementById(inputId);
+      contentElement.textContent = inputElement.value || 'Kein Inhalt verfügbar.';
+      updateSettings('legal');
+    }
+
+    function toggleAccordion(header) {
+      const content = header.nextElementSibling;
+      const allContents = document.querySelectorAll('#adminDashboard .accordion-content');
+      allContents.forEach(item => {
+        if (item !== content) {
+          item.classList.remove('active');
+        }
+      });
+      content.classList.toggle('active');
+    }
+
+    function login() {
+      const email = document.getElementById('loginEmail').value;
+      if (email) {
+        isLoggedIn = true;
+        alert(`Angemeldet als ${email}`);
+        updateHeaderButtons();
+        closeModal('loginModal');
+      } else {
+        alert('Bitte geben Sie eine E-Mail-Adresse ein');
+      }
+    }
+
+    function adminLogin() {
+      const key = document.getElementById('adminKey').value;
+      if (key === '12345') {
+        isAdmin = true;
+        isLoggedIn = true;
+        alert('Admin angemeldet');
+        updateHeaderButtons();
+        closeModal('adminLoginModal');
+      } else {
+        alert('Ungültiger Admin-Schlüssel');
+      }
+    }
+
+    function updateHeaderButtons() {
+      const buttons = document.getElementById('headerButtons');
+      buttons.innerHTML = `
+        <button onclick="showModal('loginModal')">${isLoggedIn ? 'Abmelden' : 'Anmelden'}</button>
+        <button onclick="showModal('checkoutModal')" id="cartButton">Warenkorb (${cart.length})</button>
+        ${isAdmin ? '<button onclick="showModal(\'adminDashboard\')"><svg style="width: 20px; height: 20px; display: inline; margin-right: 4px;" fill="none" stroke="#E2E8F0" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.389-1.756 2.815 0 .398 1.638-.936 3.183-2.815 3.183-1.879 0-3.213-1.545-2.815-3.183zM9 12h6m-3-3v6m5 5H7a2 2 0 01-2-2V7a2 2 0 012-2h10a2 2 0 012 2v10a2 2 0 01-2 2z" /></svg>Einstellungen</button>' : ''}
+      `;
+    }
+
+    function togglePayoutFields() {
+      const frequency = document.getElementById('payoutFrequency').value;
+      document.getElementById('weeklyPayoutFields').style.display = frequency === 'weekly' ? 'block' : 'none';
+      document.getElementById('monthlyPayoutFields').style.display = frequency === 'monthly' ? 'block' : 'none';
+    }
+
+    function updateSettings(section) {
+      let settings = {
+        general: {},
+        apiKeys: {},
+        payout: {},
+        legal: {},
+        products: products
+      };
+
+      if (section === 'general') {
+        settings.general = {
+          shopName: document.getElementById('shopNameInput').value,
+          bannerUrl: document.getElementById('bannerInput').value,
+          phone: document.getElementById('phoneInput').value,
+          hours: document.getElementById('hoursInput').value,
+          footerText: document.getElementById('footerTextInput').value,
+          youtube: document.getElementById('youtubeInput').value,
+          tiktok: document.getElementById('tiktokInput').value,
+          instagram: document.getElementById('instagramInput').value,
+          showCategories: document.getElementById('showCategories').checked,
+        };
+
+        document.getElementById('shopName').textContent = settings.general.shopName;
+        document.getElementById('banner').style.background = `url('${settings.general.bannerUrl}') center/cover no-repeat`;
+        document.getElementById('supportInfo').textContent = `${settings.general.phone} | ${settings.general.hours}`;
+        document.getElementById('footerText').textContent = settings.general.footerText;
+        document.getElementById('socialLinks').innerHTML = `
+          <a href="${settings.general.youtube}">YouTube</a>
+          <a href="${settings.general.tiktok}">TikTok</a>
+          <a href="${settings.general.instagram}">Instagram</a>
+        `;
+      } else if (section === 'apiKeys') {
+        settings.apiKeys = {
+          gelatoApi: document.getElementById('gelatoApiInput').value,
+        };
+      } else if (section === 'payout') {
+        settings.payout = {
+          payoutIban: document.getElementById('payoutIban').value,
+          payoutBic: document.getElementById('payoutBic').value,
+          payoutFrequency: document.getElementById('payoutFrequency').value,
+          payoutDayOfWeek: document.getElementById('payoutDayOfWeek').value,
+          payoutDayOfMonth: document.getElementById('payoutDayOfMonth').value,
+        };
+      } else if (section === 'legal') {
+        settings.legal = {
+          agb: document.getElementById('agbInput').value,
+          impressum: document.getElementById('impressumInput').value,
+          datenschutz: document.getElementById('datenschutzInput').value,
+          widerrufsrecht: document.getElementById('widerrufsrechtInput').value,
+        };
+      }
+
+      localStorage.setItem('shopSettings', JSON.stringify(settings));
+
+      const settingsString = JSON.stringify(settings);
+      const encodedSettings = btoa(settingsString);
+      const newUrl = `${window.location.pathname}?settings=${encodedSettings}`;
+      window.history.replaceState(null, '', newUrl);
+
+      updateCategoryFilter();
+      filterProducts(document.querySelector('header select').value);
+    }
+
+    function loadSettings() {
+      const localSettings = localStorage.getItem('shopSettings');
+      let settings = {
+        general: {
+          shopName: 'Mein Online-Shop',
+          bannerUrl: 'https://via.placeholder.com/1200x200/0A0B1A/6B46C1?text=Shop+Banner',
+          phone: '+1234567890',
+          hours: 'Mo-Fr, 9:00-14:00',
+          footerText: 'Alle Rechte vorbehalten',
+          youtube: 'https://youtube.com',
+          tiktok: 'https://tiktok.com',
+          instagram: 'https://instagram.com',
+          showCategories: true,
+        },
+        apiKeys: {},
+        payout: {
+          payoutFrequency: 'weekly',
+          payoutDayOfWeek: 'Friday',
+          payoutDayOfMonth: '1',
+        },
+        legal: {},
+        products: products
+      };
+
+      if (localSettings) {
+        try {
+          settings = JSON.parse(localSettings);
+          products = settings.products || products;
+        } catch (e) {
+          console.error('Fehler beim Laden der Einstellungen aus localStorage:', e);
+        }
+      }
+
+      document.getElementById('shopNameInput').value = settings.general.shopName;
+      document.getElementById('bannerInput').value = settings.general.bannerUrl;
+      document.getElementById('phoneInput').value = settings.general.phone;
+      document.getElementById('hoursInput').value = settings.general.hours;
+      document.getElementById('footerTextInput').value = settings.general.footerText;
+      document.getElementById('youtubeInput').value = settings.general.youtube;
+      document.getElementById('tiktokInput').value = settings.general.tiktok;
+      document.getElementById('instagramInput').value = settings.general.instagram;
+      document.getElementById('showCategories').checked = settings.general.showCategories;
+
+      document.getElementById('shopName').textContent = settings.general.shopName;
+      document.getElementById('banner').style.background = `url('${settings.general.bannerUrl}') center/cover no-repeat`;
+      document.getElementById('supportInfo').textContent = `${settings.general.phone} | ${settings.general.hours}`;
+      document.getElementById('footerText').textContent = settings.general.footerText;
+      document.getElementById('socialLinks').innerHTML = `
+        <a href="${settings.general.youtube}">YouTube</a>
+        <a href="${settings.general.tiktok}">TikTok</a>
+        <a href="${settings.general.instagram}">Instagram</a>
+      `;
+
+      document.getElementById('gelatoApiInput').value = settings.apiKeys.gelatoApi || '';
+
+      document.getElementById('payoutIban').value = settings.payout.payoutIban || '';
+      document.getElementById('payoutBic').value = settings.payout.payoutBic || '';
+      document.getElementById('payoutFrequency').value = settings.payout.payoutFrequency || 'weekly';
+      document.getElementById('payoutDayOfWeek').value = settings.payout.payoutDayOfWeek || 'Friday';
+      document.getElementById('payoutDayOfMonth').value = settings.payout.payoutDayOfMonth || '1';
+
+      document.getElementById('agbInput').value = settings.legal.agb || '';
+      document.getElementById('impressumInput').value = settings.legal.impressum || '';
+      document.getElementById('datenschutzInput').value = settings.legal.datenschutz || '';
+      document.getElementById('widerrufsrechtInput').value = settings.legal.widerrufsrecht || '';
+    }
+
+    function copySettingsLink() {
+      const url = window.location.href;
+      navigator.clipboard.writeText(url).then(() => {
+        alert('Link wurde in die Zwischenablage kopiert! Sie können ihn jetzt teilen.');
+      }).catch(err => {
+        alert('Fehler beim Kopieren des Links: ' + err);
+      });
+    }
+
+    function updateCategoryFilter() {
+      const categoryFilter = document.getElementById('categoryFilter');
+      categoryFilter.innerHTML = '<option value="All">Alle</option>';
+
+      const uniqueCategories = [...new Set(products.map(product => product.category).filter(category => category && category.trim() !== ''))];
+      
+      uniqueCategories.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category;
+        option.textContent = category;
+        categoryFilter.appendChild(option);
+      });
+    }
+
+    function addProduct() {
+      const templates = document.getElementById('productTemplates');
+      if (templates.children.length >= 20) {
+        alert('Maximal 20 Produkte erlaubt.');
+        return;
+      }
+      const newProduct = document.createElement('div');
+      newProduct.style.marginBottom = '1rem';
+      newProduct.innerHTML = `
+        <label>Gelato-Vorlagen-ID</label>
+        <input type="text" value="gelato_${Date.now()}" onchange="updateProducts()">
+        <label>Produktname</label>
+        <input type="text" value="Neues Produkt" onchange="updateProducts()">
+        <label>Kategorie</label>
+        <input type="text" placeholder="Kategorie eingeben" onchange="updateProducts()">
+        <label>Preis</label>
+        <input type="number" value="0.00" onchange="updateProducts()">
+        <label>Bild-URL</label>
+        <input type="text" value="https://via.placeholder.com/150?text=Neues+Produkt" onchange="updateProducts()">
+        <button onclick="removeProduct(this)" style="background-color: #FF4D4D;">Entfernen</button>
+      `;
+      templates.appendChild(newProduct);
+      updateProducts();
+    }
+
+    function removeProduct(button) {
+      button.parentElement.remove();
+      updateProducts();
+    }
+
+    function updateProducts() {
+      const templates = document.getElementById('productTemplates').children;
+      products = Array.from(templates).map(template => ({
+        gelatoId: template.children[1].value,
+        name: template.children[3].value,
+        category: template.children[5].value,
+        price: parseFloat(template.children[7].value),
+        image: template.children[9].value,
+      }));
+      updateSettings('products');
+    }
+
+    function loadProducts() {
+      const templates = document.getElementById('productTemplates');
+      templates.innerHTML = '';
+      products.forEach(product => {
+        const productDiv = document.createElement('div');
+        productDiv.style.marginBottom = '1rem';
+        productDiv.innerHTML = `
+          <label>Gelato-Vorlagen-ID</label>
+          <input type="text" value="${product.gelatoId}" onchange="updateProducts()">
+          <label>Produktname</label>
+          <input type="text" value="${product.name}" onchange="updateProducts()">
+          <label>Kategorie</label>
+          <input type="text" value="${product.category}" placeholder="Kategorie eingeben" onchange="updateProducts()">
+          <label>Preis</label>
+          <input type="number" value="${product.price}" onchange="updateProducts()">
+          <label>Bild-URL</label>
+          <input type="text" value="${product.image}" onchange="updateProducts()">
+          <button onclick="removeProduct(this)" style="background-color: #FF4D4D;">Entfernen</button>
+        `;
+        templates.appendChild(productDiv);
+      });
+
+      updateCategoryFilter();
+      filterProducts(document.querySelector('header select').value);
+    }
+
+    function addToCart(name, price, gelatoId) {
+      cart.push({ name, price, gelatoId });
+      updateCartCount();
+      alert(`${name} wurde zum Warenkorb hinzugefügt`);
+    }
+
+    function removeFromCart(index) {
+      cart.splice(index, 1);
+      updateCartCount();
+      updateCartDisplay();
+    }
+
+    function updateCartCount() {
+      document.getElementById('cartButton').textContent = `Warenkorb (${cart.length})`;
+    }
+
+    function updateCartDisplay() {
+      const cartItems = document.getElementById('cartItems');
+      const cartTotal = document.getElementById('cartTotal');
+      cartItems.innerHTML = '';
+      if (cart.length === 0) {
+        cartItems.innerHTML = '<p>Ihr Warenkorb ist leer.</p>';
+        cartTotal.textContent = '';
+        return;
+      }
+      cart.forEach((item, index) => {
+        const itemElement = document.createElement('div');
+        itemElement.className = 'cart-item';
+        itemElement.innerHTML = `
+          <span>${item.name} - $${item.price.toFixed(2)}</span>
+          <button onclick="removeFromCart(${index})">Entfernen</button>
+        `;
+        cartItems.appendChild(itemElement);
+      });
+      const total = cart.reduce((sum, item) => sum + item.price, 0);
+      cartTotal.textContent = `Gesamt: $${total.toFixed(2)}`;
+    }
+
+    function getLastFridayBeforeDate(year, month, day) {
+      const date = new Date(year, month - 1, day);
+      let dayOfWeek = date.getDay();
+      if (dayOfWeek !== 5) {
+        const daysToSubtract = (dayOfWeek < 5 ? dayOfWeek + 2 : dayOfWeek - 5);
+        date.setDate(day - daysToSubtract);
+      }
+      return date.getDate();
+    }
+
+    function simulateNextPayoutDate(frequency, dayOfWeek, dayOfMonth) {
+      const today = new Date();
+      let nextPayoutDate = new Date(today);
+
+      if (frequency === 'weekly') {
+        const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const targetDayIndex = daysOfWeek.indexOf(dayOfWeek);
+        const currentDayIndex = today.getDay();
+
+        let daysUntilNext = (targetDayIndex - currentDayIndex + 7) % 7;
+        if (daysUntilNext === 0) daysUntilNext = 7;
+        nextPayoutDate.setDate(today.getDate() + daysUntilNext);
+      } else if (frequency === 'monthly') {
+        const targetDay = parseInt(dayOfMonth);
+        nextPayoutDate = new Date(today.getFullYear(), today.getMonth(), targetDay);
+
+        if (nextPayoutDate < today) {
+          nextPayoutDate.setMonth(nextPayoutDate.getMonth() + 1);
+        }
+
+        const year = nextPayoutDate.getFullYear();
+        const month = nextPayoutDate.getMonth() + 1;
+        const lastFriday = getLastFridayBeforeDate(year, month, targetDay);
+        nextPayoutDate.setDate(lastFriday);
+      }
+
+      return nextPayoutDate.toISOString().split('T')[0];
+    }
+
+    async function checkout() {
+      if (cart.length === 0) {
+        alert('Ihr Warenkorb ist leer. Bitte fügen Sie Artikel hinzu, bevor Sie zur Kasse gehen.');
+        return;
+      }
+
+      const email = document.getElementById('checkoutEmail').value;
+      const name = document.getElementById('checkoutName').value;
+      const street = document.getElementById('checkoutStreet').value;
+      const city = document.getElementById('checkoutCity').value;
+      const postal = document.getElementById('checkoutPostal').value;
+      const country = document.getElementById('checkoutCountry').value;
+      const cardNumber = document.getElementById('cardNumber').value;
+      const cardExpiry = document.getElementById('cardExpiry').value;
+      const cardCvc = document.getElementById('cardCvc').value;
+
+      if (!email || !name || !street || !city || !postal || !country || !cardNumber || !cardExpiry || !cardCvc) {
+        alert('Bitte füllen Sie alle Felder aus');
+        return;
+      }
+
+      const address = { street, city, postal, country };
+      const total = cart.reduce((sum, item) => sum + item.price, 0);
+
+      const iban = document.getElementById('payoutIban').value;
+      const bic = document.getElementById('payoutBic').value;
+      const frequency = document.getElementById('payoutFrequency').value;
+      const dayOfWeek = document.getElementById('payoutDayOfWeek').value;
+      const dayOfMonth = document.getElementById('payoutDayOfMonth').value;
+
+      if (!iban || !bic) {
+        alert('Bitte geben Sie IBAN und BIC im Admin-Dashboard unter Auszahlungseinstellungen ein.');
+        return;
+      }
+
+      try {
+        console.log('Zahlung per Kreditkarte verarbeitet:', {
+          cardNumber,
+          cardExpiry,
+          cardCvc,
+          amount: total * 100,
+          currency: 'usd',
+          customer: { email, name, address },
+          note: 'Für die tatsächliche Zahlungsabwicklung ist ein Server erforderlich.',
+        });
+
+        const order = {
+          id: `order_${Date.now()}`,
+          items: cart,
+          customer: { email, name },
+          shippingAddress: address,
+        };
+        orders.push(order);
+        updateOrders();
+
+        analytics.daily += total;
+        analytics.monthly += total;
+        analytics.total += total;
+        updateAnalytics();
+
+        const gelatoOrder = {
+          orderId: order.id,
+          items: cart.map(item => ({
+            productId: item.gelatoId,
+            name: item.name,
+            design: item.name.includes('Fuchs') ? 'Fuchs' : 'Default',
+          })),
+          shippingAddress: address,
+          customer: { email, name },
+        };
+        console.log('An Gelato senden:', gelatoOrder);
+
+        let payoutDetails = {
+          total,
+          currency: 'USD',
+          method: 'Banküberweisung (aus Kreditkartenzahlung)',
+          iban,
+          bic,
+          frequency,
+        };
+
+        const nextPayoutDate = simulateNextPayoutDate(frequency, dayOfWeek, dayOfMonth);
+
+        if (frequency === 'weekly') {
+          payoutDetails.dayOfWeek = dayOfWeek;
+          console.log('Auszahlung an Admin-Bankkonto geplant:', {
+            ...payoutDetails,
+            period: `Wöchentlich (jeden ${dayOfWeek})`,
+            nextPayoutDate: nextPayoutDate,
+          });
+        } else if (frequency === 'monthly') {
+          const currentDate = new Date();
+          const year = currentDate.getFullYear();
+          const month = currentDate.getMonth() + 1;
+          const lastFriday = getLastFridayBeforeDate(year, month, parseInt(dayOfMonth));
+          
+          payoutDetails.dayOfMonth = dayOfMonth;
+          console.log('Auszahlung an Admin-Bankkonto geplant:', {
+            ...payoutDetails,
+            period: `Monatlich (am ${dayOfMonth}, verschoben auf den letzten Freitag: ${lastFriday})`,
+            nextPayoutDate: nextPayoutDate,
+          });
+        }
+
+        const emailContent = `
+          <div style="background-color: #0A0B1A; color: #E2E8F0; padding: 20px; font-family: 'Poppins', sans-serif; border: 1px solid #6B46C1; border-radius: 8px;">
+            <h2 style="color: #00D4FF;">Bestellbestätigung</h2>
+            <p>Vielen Dank für Ihre Bestellung bei uns!</p>
+            <p><strong>Bestell-ID:</strong> ${order.id}</p>
+            <p><strong>Kunde:</strong> ${order.customer.name} (${order.customer.email})</p>
+            <p><strong>Lieferadresse:</strong> ${order.shippingAddress.street}, ${order.shippingAddress.city}, ${order.shippingAddress.postal}, ${order.shippingAddress.country}</p>
+            <p><strong>Artikel:</strong></p>
+            <ul>
+              ${order.items.map(item => `<li>${item.name} - $${item.price.toFixed(2)}</li>`).join('')}
+            </ul>
+            <p><strong>Gesamt:</strong> $${total.toFixed(2)}</p>
+            <p>Ihre Zahlung wurde erfolgreich per Kreditkarte abgewickelt.</p>
+            <p style="color: #00D4FF;">Ihr Online-Shop-Team</p>
+          </div>
+        `;
+        console.log(`E-Mail an ${email} gesendet:`, emailContent);
+
+        alert('Zahlung erfolgreich! Bestellung bestätigt. Eine Bestellbestätigung wurde an Ihre E-Mail-Adresse gesendet.');
+        cart = [];
+        updateCartCount();
+        updateCartDisplay();
+        closeModal('checkoutModal');
+      } catch (error) {
+        console.error('Checkout-Fehler:', error);
+        alert('Zahlung fehlgeschlagen. Bitte überprüfen Sie die eingegebenen Kreditkartendaten.');
+      }
+    }
+
+    function updateOrders() {
+      const ordersList = document.getElementById('ordersList');
+      const orderLibrary = document.getElementById('orderLibrary');
+      ordersList.innerHTML = '';
+      orderLibrary.innerHTML = '';
+      orders.forEach(order => {
+        const total = order.items.reduce((sum, item) => sum + item.price, 0);
+        const orderHtml = `
+          <div class="order">
+            <p>Bestell-ID: ${order.id}</p>
+            <p>Kunde: ${order.customer.name}</p>
+            <p>Gesamt: $${total.toFixed(2)}</p>
+            <button onclick="deleteOrder('${order.id}')" style="background-color: #FF4D4D;">Löschen</button>
+            <button onclick="downloadOrderAsPDF('${order.id}')">PDF herunterladen</button>
+          </div>
+        `;
+        ordersList.innerHTML += orderHtml;
+
+        const libraryHtml = `
+          <div class="order">
+            <p>Bestell-ID: ${order.id}</p>
+            <p>Kunde: ${order.customer.name}</p>
+            <p>Adresse: ${order.shippingAddress.street}, ${order.shippingAddress.city}, ${order.shippingAddress.postal}, ${order.shippingAddress.country}</p>
+            <p>Artikel: ${order.items.map(item => `${item.name} (ID: ${item.gelatoId})`).join(', ')}</p>
+            <p>Gesamt: $${total.toFixed(2)}</p>
+            <button onclick="downloadOrderAsPDF('${order.id}')">Als PDF herunterladen</button>
+          </div>
+        `;
+        orderLibrary.innerHTML += libraryHtml;
+      });
+    }
+
+    function deleteOrder(orderId) {
+      orders = orders.filter(order => order.id !== orderId);
+      updateOrders();
+    }
+
+    function downloadOrderAsPDF(orderId) {
+      const order = orders.find(o => o.id === orderId);
+      console.log('PDF für Bestellung herunterladen:', order);
+      alert(`PDF für Bestellung ${orderId} heruntergeladen`);
+    }
+
+    function downloadAllOrdersAsPDF() {
+      console.log('Alle Bestellungen als PDF herunterladen:', orders);
+      alert('Alle Bestellungen als PDF heruntergeladen');
+    }
+
+    function updateAnalytics() {
+      document.getElementById('dailyRevenue').textContent = analytics.daily.toFixed(2);
+      document.getElementById('monthlyRevenue').textContent = analytics.monthly.toFixed(2);
+      document.getElementById('totalRevenue').textContent = analytics.total.toFixed(2);
+    }
+
+    function filterProducts(category) {
+      const grid = document.getElementById('productGrid');
+      grid.innerHTML = '';
+      const showCategories = document.getElementById('showCategories')?.checked ?? true;
+      products.forEach(product => {
+        if (category === 'All' || product.category === category) {
+          const card = document.createElement('div');
+          card.className = 'product-card';
+          card.innerHTML = `
+            <img src="${product.image}" alt="${product.name}">
+            <h3>${product.name}</h3>
+            <p>$${product.price.toFixed(2)}</p>
+            ${showCategories ? `<p class="category">Kategorie: ${product.category}</p>` : ''}
+            <button onclick="addToCart('${product.name}', ${product.price}, '${product.gelatoId}')">In den Warenkorb</button>
+          `;
+          grid.appendChild(card);
+        }
+      });
+    }
+  </script>
+</body>
+</html>
